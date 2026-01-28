@@ -17,7 +17,7 @@ object UserTable : BaseIdTable("user") {
     val otpCode = varchar("otp_code", 6)
     val otpExpiry = datetime("otp_expiry").nullable()
     val isVerified = bool("isVerified").default(false)
-    val isActive = bool("isActive").default(false)
+    val isActive = bool("isActive").default(true)
     override val primaryKey = PrimaryKey(id)
 
     init {

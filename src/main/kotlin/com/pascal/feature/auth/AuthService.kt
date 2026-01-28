@@ -1,5 +1,6 @@
 package com.pascal.feature.auth
 
+import at.favre.lib.crypto.bcrypt.BCrypt
 import com.pascal.contants.Message
 import com.pascal.contants.UserType
 import com.pascal.database.entities.LoginResponse
@@ -10,8 +11,10 @@ import com.pascal.model.request.LoginRequest
 import com.pascal.model.request.RegisterRequest
 import com.pascal.model.response.Registration
 import com.pascal.utils.CommonException
+import com.pascal.utils.PasswordNotMatch
 import com.pascal.utils.ValidationException
 import com.pascal.utils.ValidationUtils
+import com.pascal.utils.extension.notFoundException
 import com.pascal.utils.extension.query
 import com.pascal.utils.generateOTP
 import com.pascal.utils.sendEmail
@@ -93,7 +96,43 @@ class AuthService : AuthRepository {
             throw ValidationException("Invalid user type. Must be one of: ADMIN, USER")
     }
 
-    override suspend fun login(request: LoginRequest): LoginResponse {
-        TODO("Not yet implemented")
+    override suspend fun login(request: LoginRequest): LoginResponse = query {
+        validateLoginRequest(request)
+
+        val userTypeEnum = UserType.fromString(request.userType) ?: run {
+            throw request.email.notFoundException()
+        }
+
+        val userEntity =
+            UserDao.find { UserTable.email eq request.email and (UserTable.userType eq userTypeEnum) }
+                .toList().singleOrNull()
+
+        userEntity?.let {
+            if (BCrypt.verifyer().verify(
+                    request.password.toCharArray(), it.password
+                ).verified
+            ) {
+                if (it.isVerified) {
+                    if (it.isActive) {
+                        it.loggedInWIthToken()
+                    } else {
+                        throw CommonException(Message.ACCOUNT_DEACTIVATED)
+                    }
+                } else {
+                    throw CommonException(Message.ACCOUNT_NOT_VERIFIED)
+                }
+            } else {
+                throw PasswordNotMatch()
+            }
+        } ?: throw request.email.notFoundException()
+    }
+
+    private fun validateLoginRequest(request: LoginRequest) {
+        if (!ValidationUtils.validateEmail(request.email))
+            throw ValidationException("Invalid email format")
+        if (!ValidationUtils.validatePassword(request.userType))
+            throw ValidationException("Invalid user type. Must be one of: ADMIN, USER")
+        if (request.password.isBlank())
+            throw ValidationException("Password cannot be empty")
     }
 }
