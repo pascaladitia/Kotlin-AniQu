@@ -6,7 +6,7 @@ object DotEnvConfig {
     // Database configuration
     val dbHost: String get() = DotEnv.get("DB_HOST", "localhost")
     val dbPort: Int get() = DotEnv.getInt("DB_PORT", 5432)
-    val dbName: String get() = DotEnv.get("DB_NAME", "aniqu-1.0.0")
+    val dbName: String get() = DotEnv.get("DB_NAME", "kotlin-aniqu")
     val dbUser: String get() = DotEnv.get("DB_USER", "postgres")
     val dbPassword: String get() = DotEnv.get("DB_PASSWORD", "p123")
 
