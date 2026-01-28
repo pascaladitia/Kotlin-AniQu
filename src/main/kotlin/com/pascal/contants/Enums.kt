@@ -2,14 +2,12 @@ package com.pascal.contants
 
 
 enum class UserType {
-    SUPER_ADMIN,
-    ADMIN,
-    SELLER,
-    CUSTOMER;
+    PREMIUM,
+    REGULAR;
 
-    val isAdminOrHigher get() = this in listOf(SUPER_ADMIN, ADMIN)
-    val isSellerOrHigher get() = this in listOf(SUPER_ADMIN, ADMIN, SELLER)
-    val isCustomerOrHigher get() = true // All roles can act as customers
+    val isUserPremium get() = this in listOf(PREMIUM, REGULAR)
+    val isUserRegular get() = this in listOf(REGULAR)
+    val isUserOrHigher get() = true
 
     companion object {
         fun fromString(role: String): UserType? =
