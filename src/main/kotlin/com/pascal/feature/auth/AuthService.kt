@@ -65,6 +65,8 @@ class AuthService : AuthRepository {
                 email = request.email
                 otpCode = otp
                 otpExpiry = now
+                password = BCrypt.withDefaults().hashToString(12, request.password.toCharArray())
+                userType = userTypeEnum
             }
 
             UserProfileDAO.new {
@@ -130,7 +132,7 @@ class AuthService : AuthRepository {
     private fun validateLoginRequest(request: LoginRequest) {
         if (!ValidationUtils.validateEmail(request.email))
             throw ValidationException("Invalid email format")
-        if (!ValidationUtils.validatePassword(request.userType))
+        if (UserType.fromString(request.userType) == null)
             throw ValidationException("Invalid user type. Must be one of: ADMIN, USER")
         if (request.password.isBlank())
             throw ValidationException("Password cannot be empty")

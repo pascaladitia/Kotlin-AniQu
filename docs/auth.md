@@ -39,7 +39,7 @@ curl -X 'POST' \
   -d '{
     "email": "customer@gmail.com",
     "password": "p1234",
-    "userType": "customer"
+    "userType": "user"
   }'
 ```
 

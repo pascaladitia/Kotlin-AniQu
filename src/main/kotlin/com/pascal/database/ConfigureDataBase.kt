@@ -1,7 +1,9 @@
 package com.pascal.database
 
 import com.pascal.config.DotEnvConfig
+import com.pascal.database.entities.UserProfileTable
 import com.pascal.database.entities.UserTable
+import com.pascal.model.response.UserProfile
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.flywaydb.core.Flyway
@@ -18,7 +20,8 @@ fun configureDataBase() {
     transaction {
         TransactionManager.current().addLogger(Slf4jSqlDebugLogger)
         SchemaUtils.create(
-            UserTable
+            UserTable,
+            UserProfileTable
         )
     }
 }
