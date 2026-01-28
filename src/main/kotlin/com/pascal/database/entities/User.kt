@@ -7,7 +7,7 @@ import com.pascal.database.entities.base.BaseIdTable
 import com.pascal.feature.auth.JwtConfig
 import com.pascal.model.request.JwtTokenRequest
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.jetbrains.exposed.v1.datetime.datetime
+import org.jetbrains.exposed.v1.javatime.datetime
 import java.time.LocalDateTime
 
 object UserTable : BaseIdTable("user") {

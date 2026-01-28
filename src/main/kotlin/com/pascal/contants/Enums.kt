@@ -2,12 +2,11 @@ package com.pascal.contants
 
 
 enum class UserType {
-    PREMIUM,
-    REGULAR;
+    ADMIN,
+    USER;
 
-    val isUserPremium get() = this in listOf(PREMIUM, REGULAR)
-    val isUserRegular get() = this in listOf(REGULAR)
-    val isUserOrHigher get() = true
+    val isAdmin get() = this in listOf(ADMIN, USER)
+    val isRegular get() = this in listOf(USER)
 
     companion object {
         fun fromString(role: String): UserType? =

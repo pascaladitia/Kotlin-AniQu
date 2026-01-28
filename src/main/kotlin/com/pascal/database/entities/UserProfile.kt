@@ -1,0 +1,63 @@
+package com.pascal.database.entities
+
+
+import com.pascal.database.entities.base.BaseEntity
+import com.pascal.database.entities.base.BaseEntityClass
+import com.pascal.database.entities.base.BaseIdTable
+import com.pascal.model.response.UserProfile
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.datetime.date
+
+object UserProfileTable : BaseIdTable("user_profile") {
+    val userId = reference("user_id", UserTable.id)
+    val image = text("image").nullable()
+    val firstName = text("first_name").nullable()
+    val lastName = text("last_name").nullable()
+    val mobile = text("mobile").nullable()
+    val streetAddress = text("street_address").nullable()
+    val city = text("city").nullable()
+    val state = text("state").nullable()
+    val country = text("country").nullable()
+    val occupation = text("occupation").nullable()
+    val postCode = text("post_code").nullable()
+    val gender = text("gender").nullable()
+    val dateOfBirth = date("date_of_birth").nullable()
+    val bio = text("bio").nullable()
+    val isActive = bool("is_active").default(true)
+    val verified = bool("verified").default(false)
+    // createdAt and updatedAt are inherited from BaseIdTable
+}
+
+class UserProfileDAO(id: EntityID<String>) : BaseEntity(id, UserProfileTable) {
+    companion object : BaseEntityClass<UserProfileDAO>(UserProfileTable, UserProfileDAO::class.java)
+
+    var userId by UserProfileTable.userId
+    var image by UserProfileTable.image
+    var firstName by UserProfileTable.firstName
+    var lastName by UserProfileTable.lastName
+    var mobile by UserProfileTable.mobile
+    var streetAddress by UserProfileTable.streetAddress
+    var city by UserProfileTable.city
+    var state by UserProfileTable.state
+    var country by UserProfileTable.country
+    var occupation by UserProfileTable.occupation
+    var postCode by UserProfileTable.postCode
+    var gender by UserProfileTable.gender
+    var dateOfBirth by UserProfileTable.dateOfBirth
+    var bio by UserProfileTable.bio
+    var isActive by UserProfileTable.isActive
+    var verified by UserProfileTable.verified
+
+    fun response() = UserProfile(
+        userId = userId.value,
+        image = image,
+        firstName = firstName,
+        lastName = lastName,
+        mobile = mobile,
+        streetAddress = streetAddress,
+        city = city,
+        occupation = occupation,
+        postCode = postCode,
+        gender = gender,
+    )
+}

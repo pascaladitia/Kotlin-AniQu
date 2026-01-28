@@ -9,8 +9,8 @@ import io.ktor.server.response.*
 
 object RoleHierarchy {
     val roleHierarchy = mapOf(
-        UserType.PREMIUM to setOf(UserType.PREMIUM, UserType.REGULAR),
-        UserType.REGULAR to setOf(UserType.REGULAR)
+        UserType.ADMIN to setOf(UserType.ADMIN, UserType.USER),
+        UserType.USER to setOf(UserType.USER)
     )
 
     fun hasAccess(userRole: UserType, resourceRole: UserType): Boolean {
@@ -37,10 +37,10 @@ suspend fun ApplicationCall.requireSpecificRole(role: UserType) {
 object RoleBasedAuth {
 
     fun isRegular(userType: String): Boolean {
-        return UserType.fromString(userType) == UserType.REGULAR
+        return UserType.fromString(userType) == UserType.USER
     }
 
     fun isPremium(userType: String): Boolean {
-        return UserType.fromString(userType) == UserType.PREMIUM
+        return UserType.fromString(userType) == UserType.ADMIN
     }
 }
