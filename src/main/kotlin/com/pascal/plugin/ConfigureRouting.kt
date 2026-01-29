@@ -9,6 +9,6 @@ import org.koin.ktor.ext.inject
 fun Application.configureRoute() {
     val authController: AuthService by inject()
     routing {
-        authRoutes(authController,)
+        authRoutes(authController)
     }
 }

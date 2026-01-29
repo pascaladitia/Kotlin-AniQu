@@ -116,4 +116,34 @@ curl -X 'POST' \
 }
 ```
 
----
+### 3. OTP Verification
+
+**`POST /auth/otp-verification`**
+
+#### Request Parameters
+
+| Parameter  | Type | Required | Description |
+|------------|------|----------|-------------|
+| `userId`   | string | Yes | User's Id   |
+| `otp`      | string | Yes | otp Input   |
+
+#### Example Request
+
+```bash
+curl -X 'GET' \
+  'http://localhost:8080/auth/otp-verification?userId=5994b239-67b3-4004-ad2b-f01de650e5d8&otp=355498' \
+  -H 'accept: application/json'
+```
+
+#### Example Response
+
+```json
+{
+  "isSuccess": true,
+  "statusCode": {
+    "value": 200,
+    "description": "OK"
+  },
+  "data": true
+}
+```
