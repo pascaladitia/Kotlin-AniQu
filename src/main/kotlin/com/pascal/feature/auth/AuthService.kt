@@ -3,6 +3,7 @@ package com.pascal.feature.auth
 import at.favre.lib.crypto.bcrypt.BCrypt
 import com.pascal.contants.Message
 import com.pascal.contants.UserType
+import com.pascal.database.entities.ChangePassword
 import com.pascal.database.entities.LoginResponse
 import com.pascal.database.entities.UserDao
 import com.pascal.database.entities.UserProfileDAO
@@ -12,6 +13,7 @@ import com.pascal.model.request.RegisterRequest
 import com.pascal.model.response.Registration
 import com.pascal.utils.CommonException
 import com.pascal.utils.PasswordNotMatch
+import com.pascal.utils.UserNotExistException
 import com.pascal.utils.ValidationException
 import com.pascal.utils.ValidationUtils
 import com.pascal.utils.extension.notFoundException
@@ -127,6 +129,34 @@ class AuthService : AuthRepository {
                 throw PasswordNotMatch()
             }
         } ?: throw request.email.notFoundException()
+    }
+
+    override suspend fun otpVerification(userId: String, otp: String): Boolean = query {
+        val userEntity = UserDao.find { UserTable.id eq userId }.toList().singleOrNull()
+        userEntity?.let {
+            if (it.otpCode == otp) {
+                it.isVerified = true
+                true
+            } else {
+                false
+            }
+        } ?: throw UserNotExistException()
+    }
+
+    override suspend fun changePassword(userId: String, changePassword: ChangePassword): Boolean = query {
+        val userEntity = UserDao.find { UserTable.id eq userId }.toList().singleOrNull()
+        userEntity?.let {
+            if (BCrypt.verifyer().verify(changePassword.oldPassword.toCharArray(), it.password).verified) {
+                // Check if new password is same as old password
+                if (changePassword.oldPassword == changePassword.newPassword) {
+                    throw CommonException(Message.NEW_PASSWORD_CANNOT_BE_SAME_AS_OLD_PASSWORD)
+                }
+                it.password = BCrypt.withDefaults().hashToString(12, changePassword.newPassword.toCharArray())
+                true
+            } else {
+                false
+            }
+        } ?: throw UserNotExistException()
     }
 
     private fun validateLoginRequest(request: LoginRequest) {
