@@ -16,6 +16,13 @@ object RoleHierarchy {
     fun hasAccess(userRole: UserType, resourceRole: UserType): Boolean {
         return roleHierarchy[userRole]?.contains(resourceRole) ?: false
     }
+
+    fun canManageUser(currentUserType: UserType, targetUserType: UserType): Boolean {
+        return when (currentUserType) {
+            UserType.ADMIN -> true  // admin can manage all users
+            UserType.USER -> targetUserType == UserType.USER
+        }
+    }
 }
 
 

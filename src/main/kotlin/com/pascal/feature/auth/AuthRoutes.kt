@@ -1,24 +1,23 @@
 package com.pascal.feature.auth
 
+import com.pascal.contants.AppConstants
+import com.pascal.contants.Message
+import com.pascal.contants.UserType
 import com.pascal.database.entities.ChangePassword
+import com.pascal.model.request.ForgetPasswordRequest
 import com.pascal.model.request.JwtTokenRequest
 import com.pascal.model.request.LoginRequest
 import com.pascal.model.request.RegisterRequest
+import com.pascal.model.request.ResetRequest
 import com.pascal.plugin.RoleManagement
 import com.pascal.utils.ApiResponse
 import com.pascal.utils.extension.requiredParameters
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.principal
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.RoutingContext
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.put
-import io.ktor.server.routing.route
-import kotlin.coroutines.Continuation
+import com.pascal.utils.sendEmail
+import io.ktor.http.*
+import io.ktor.server.auth.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 
 fun Route.authRoutes(authController: AuthService) {
     route("/auth") {
@@ -62,6 +61,175 @@ fun Route.authRoutes(authController: AuthService) {
                     ) else call.respond(
                         ApiResponse.failure(
                             "Old password is wrong", HttpStatusCode.OK
+                        )
+                    )
+                }
+            }
+        }
+
+        put("forget_password") {
+            val (email, userType) = call.requiredParameters("email", "userType") ?: return@put
+            val requestBody = ForgetPasswordRequest(email, userType)
+            authController.forgetPassword(requestBody).let { otp ->
+                sendEmail(requestBody.email, otp)
+                call.respond(
+                    ApiResponse.success(
+                        "${Message.VERIFICATION_CODE_SENT_TO} ${requestBody.email}",
+                        HttpStatusCode.OK
+                    )
+                )
+            }
+        }
+
+        get("reset-password") {
+            val (email, otp, newPassword, userType) = call.requiredParameters(
+                "email", "otp", "newPassword", "userType"
+            ) ?: return@get
+
+            authController.resetPassword(
+                ResetRequest(
+                    email, otp, newPassword, userType
+                )
+            ).let {
+                when (it) {
+                    AppConstants.DataBaseTransaction.FOUND -> {
+                        call.respond(
+                            ApiResponse.success(
+                                Message.PASSWORD_CHANGE_SUCCESS, HttpStatusCode.OK
+                            )
+                        )
+                    }
+
+                    AppConstants.DataBaseTransaction.NOT_FOUND -> {
+                        call.respond(
+                            ApiResponse.success(
+                                Message.VERIFICATION_CODE_IS_NOT_VALID, HttpStatusCode.OK
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        authenticate(RoleManagement.ADMIN.role, RoleManagement.USER.role) {
+            put("/{userId}/change-user-type") {
+                val (userId) = call.requiredParameters("userId") ?: return@put
+                val userTypeParam = call.parameters["userType"] ?: run {
+                    call.respond(HttpStatusCode.BadRequest, "userType parameter is required")
+                    return@put
+                }
+
+                val newType = try {
+                    UserType.valueOf(userTypeParam.uppercase())
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid userType")
+                    return@put
+                }
+
+                val currentUser = call.principal<JwtTokenRequest>()
+                if (currentUser == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
+                    return@put
+                }
+
+                try {
+                    val success = authController.changeUserType(
+                        currentUser.userId,
+                        userId,
+                        newType
+                    )
+
+                    if (success) {
+                        call.respond(
+                            ApiResponse.success(
+                                "User type changed successfully to $newType", HttpStatusCode.OK
+                            )
+                        )
+                    } else {
+                        call.respond(
+                            ApiResponse.failure(
+                                "Failed to change user type", HttpStatusCode.BadRequest
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    call.respond(
+                        ApiResponse.failure(
+                            e.message ?: "Error changing user type", HttpStatusCode.BadRequest
+                        )
+                    )
+                }
+            }
+
+            put("/{userId}/deactivate") {
+                val (userId) = call.requiredParameters("userId") ?: return@put
+                val currentUser = call.principal<JwtTokenRequest>()
+
+                if (currentUser == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
+                    return@put
+                }
+
+                try {
+                    val success = authController.deactivateUser(
+                        currentUser.userId,
+                        userId
+                    )
+
+                    if (success) {
+                        call.respond(
+                            ApiResponse.success(
+                                "User deactivated successfully", HttpStatusCode.OK
+                            )
+                        )
+                    } else {
+                        call.respond(
+                            ApiResponse.failure(
+                                "Failed to deactivate user", HttpStatusCode.BadRequest
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    call.respond(
+                        ApiResponse.failure(
+                            e.message ?: "Error deactivating user", HttpStatusCode.BadRequest
+                        )
+                    )
+                }
+            }
+
+            put("/{userId}/activate") {
+                val (userId) = call.requiredParameters("userId") ?: return@put
+                val currentUser = call.principal<JwtTokenRequest>()
+
+                if (currentUser == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Unauthorized")
+                    return@put
+                }
+
+                try {
+                    val success = authController.activateUser(
+                        currentUser.userId,
+                        userId
+                    )
+
+                    if (success) {
+                        call.respond(
+                            ApiResponse.success(
+                                "User activated successfully", HttpStatusCode.OK
+                            )
+                        )
+                    } else {
+                        call.respond(
+                            ApiResponse.failure(
+                                "Failed to activate user", HttpStatusCode.BadRequest
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    call.respond(
+                        ApiResponse.failure(
+                            e.message ?: "Error activating user", HttpStatusCode.BadRequest
                         )
                     )
                 }

@@ -1,25 +1,18 @@
 package com.pascal.feature.auth
 
 import at.favre.lib.crypto.bcrypt.BCrypt
+import com.pascal.contants.AppConstants
 import com.pascal.contants.Message
 import com.pascal.contants.UserType
-import com.pascal.database.entities.ChangePassword
-import com.pascal.database.entities.LoginResponse
-import com.pascal.database.entities.UserDao
-import com.pascal.database.entities.UserProfileDAO
-import com.pascal.database.entities.UserTable
+import com.pascal.database.entities.*
+import com.pascal.model.request.ForgetPasswordRequest
 import com.pascal.model.request.LoginRequest
 import com.pascal.model.request.RegisterRequest
+import com.pascal.model.request.ResetRequest
 import com.pascal.model.response.Registration
-import com.pascal.utils.CommonException
-import com.pascal.utils.PasswordNotMatch
-import com.pascal.utils.UserNotExistException
-import com.pascal.utils.ValidationException
-import com.pascal.utils.ValidationUtils
+import com.pascal.utils.*
 import com.pascal.utils.extension.notFoundException
 import com.pascal.utils.extension.query
-import com.pascal.utils.generateOTP
-import com.pascal.utils.sendEmail
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.neq
@@ -157,6 +150,104 @@ class AuthService : AuthRepository {
                 false
             }
         } ?: throw UserNotExistException()
+    }
+
+    override suspend fun forgetPassword(request: ForgetPasswordRequest): String = query {
+        val userEntities = UserDao.find { UserTable.email eq request.email }.toList()
+
+        if (userEntities.isEmpty()) {
+            throw request.email.notFoundException()
+        }
+
+        val userTypeEnum = try {
+            UserType.valueOf(request.userType.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw request.email.notFoundException()
+        }
+
+        val specificUser = userEntities.find { it.userType == userTypeEnum }
+        specificUser?.let {
+            val otp = generateOTP()
+            it.otpCode = otp
+            otp
+        } ?: throw "${request.email} not found for ${request.userType} role".notFoundException()
+    }
+
+    override suspend fun resetPassword(request: ResetRequest): Int = query {
+        val userEntities = UserDao.find { UserTable.email eq request.email }.toList()
+
+        if (userEntities.isEmpty()) {
+            throw request.email.notFoundException()
+        }
+
+        val userTypeEnum = try {
+            UserType.valueOf(request.userType.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw "${request.email} not found for ${request.userType} role".notFoundException()
+        }
+
+        val userEntity = userEntities.find { it.userType == userTypeEnum }
+            ?: throw "${request.email} not found for ${request.userType} role".notFoundException()
+
+        if (userEntity.otpCode == request.verificationCode) {
+            if (BCrypt.verifyer().verify(request.newPassword.toCharArray(),userEntity.password).verified) {
+                throw CommonException(Message.NEW_PASSWORD_CANNOT_BE_SAME_AS_CURRENT_PASSWORD)
+            }
+            userEntity.password = BCrypt.withDefaults().hashToString(12, request.newPassword.toCharArray())
+            AppConstants.DataBaseTransaction.FOUND
+        } else {
+            AppConstants.DataBaseTransaction.NOT_FOUND
+        }
+    }
+
+    override suspend fun changeUserType(
+        currentUserId: String,
+        targetUserId: String,
+        newUserType: UserType
+    ): Boolean = query {
+        if (currentUserId.isBlank()) throw ValidationException("Current user ID cannot be blank")
+        if (targetUserId.isBlank()) throw ValidationException("Target user ID cannot be blank")
+
+        val currentUser = UserDao.findById(currentUserId) ?: throw UserNotExistException()
+        val targetUser = UserDao.findById(targetUserId) ?: throw UserNotExistException()
+
+        if (!RoleHierarchy.canManageUser(currentUser.userType, targetUser.userType)) {
+            throw CommonException("Insufficient permission to change user type to $newUserType")
+        }
+
+        targetUser.userType = newUserType
+
+        true
+    }
+
+    override suspend fun deactivateUser(currentUserId: String, targetUserId: String): Boolean = query {
+        val currentUser = UserDao.find { UserTable.id eq currentUserId }.singleOrNull()
+            ?: throw UserNotExistException()
+
+        val targetUser = UserDao.find { UserTable.id eq targetUserId }.singleOrNull()
+            ?: throw UserNotExistException()
+
+        if (!RoleHierarchy.canManageUser(currentUser.userType, targetUser.userType)) {
+            throw CommonException("Insufficient permissions to deactivate user")
+        }
+
+        targetUser.isActive = false
+        true
+    }
+
+    override suspend fun activateUser(currentUserId: String, targetUserId: String): Boolean = query {
+        val currentUser = UserDao.find { UserTable.id eq currentUserId }.singleOrNull()
+            ?: throw UserNotExistException()
+
+        val targetUser = UserDao.find { UserTable.id eq targetUserId }.singleOrNull()
+            ?: throw UserNotExistException()
+
+        if (!RoleHierarchy.canManageUser(currentUser.userType, targetUser.userType)) {
+            throw CommonException("Insufficient permissions to activate user")
+        }
+
+        targetUser.isActive = true
+        true
     }
 
     private fun validateLoginRequest(request: LoginRequest) {
