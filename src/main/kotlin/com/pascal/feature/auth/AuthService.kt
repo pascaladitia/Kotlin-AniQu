@@ -30,11 +30,11 @@ class AuthService : AuthRepository {
         }
 
         val existingUserSameType =
-            UserDao.find { UserTable.email eq request.email and (UserTable.userType eq userTypeEnum) }
+            UserDAO.find { UserTable.email eq request.email and (UserTable.userType eq userTypeEnum) }
                 .singleOrNull()
 
         val existingUserDifferentType =
-            UserDao.find { UserTable.email eq request.email and (UserTable.userType neq userTypeEnum) }
+            UserDAO.find { UserTable.email eq request.email and (UserTable.userType neq userTypeEnum) }
                 .singleOrNull()
 
         val otp = generateOTP()
@@ -56,7 +56,7 @@ class AuthService : AuthRepository {
 
         } else {
 
-            val inserted = UserDao.new {
+            val inserted = UserDAO.new {
                 email = request.email
                 otpCode = otp
                 otpExpiry = now
@@ -101,7 +101,7 @@ class AuthService : AuthRepository {
         }
 
         val userEntity =
-            UserDao.find { UserTable.email eq request.email and (UserTable.userType eq userTypeEnum) }
+            UserDAO.find { UserTable.email eq request.email and (UserTable.userType eq userTypeEnum) }
                 .toList().singleOrNull()
 
         userEntity?.let {
@@ -125,7 +125,7 @@ class AuthService : AuthRepository {
     }
 
     override suspend fun otpVerification(userId: String, otp: String): Boolean = query {
-        val userEntity = UserDao.find { UserTable.id eq userId }.toList().singleOrNull()
+        val userEntity = UserDAO.find { UserTable.id eq userId }.toList().singleOrNull()
         userEntity?.let {
             if (it.otpCode == otp) {
                 it.isVerified = true
@@ -137,7 +137,7 @@ class AuthService : AuthRepository {
     }
 
     override suspend fun changePassword(userId: String, changePassword: ChangePassword): Boolean = query {
-        val userEntity = UserDao.find { UserTable.id eq userId }.toList().singleOrNull()
+        val userEntity = UserDAO.find { UserTable.id eq userId }.toList().singleOrNull()
         userEntity?.let {
             if (BCrypt.verifyer().verify(changePassword.oldPassword.toCharArray(), it.password).verified) {
                 // Check if new password is same as old password
@@ -153,7 +153,7 @@ class AuthService : AuthRepository {
     }
 
     override suspend fun forgetPassword(request: ForgetPasswordRequest): String = query {
-        val userEntities = UserDao.find { UserTable.email eq request.email }.toList()
+        val userEntities = UserDAO.find { UserTable.email eq request.email }.toList()
 
         if (userEntities.isEmpty()) {
             throw request.email.notFoundException()
@@ -174,7 +174,7 @@ class AuthService : AuthRepository {
     }
 
     override suspend fun resetPassword(request: ResetRequest): Int = query {
-        val userEntities = UserDao.find { UserTable.email eq request.email }.toList()
+        val userEntities = UserDAO.find { UserTable.email eq request.email }.toList()
 
         if (userEntities.isEmpty()) {
             throw request.email.notFoundException()
@@ -208,8 +208,8 @@ class AuthService : AuthRepository {
         if (currentUserId.isBlank()) throw ValidationException("Current user ID cannot be blank")
         if (targetUserId.isBlank()) throw ValidationException("Target user ID cannot be blank")
 
-        val currentUser = UserDao.findById(currentUserId) ?: throw UserNotExistException()
-        val targetUser = UserDao.findById(targetUserId) ?: throw UserNotExistException()
+        val currentUser = UserDAO.findById(currentUserId) ?: throw UserNotExistException()
+        val targetUser = UserDAO.findById(targetUserId) ?: throw UserNotExistException()
 
         if (!RoleHierarchy.canManageUser(currentUser.userType, targetUser.userType)) {
             throw CommonException("Insufficient permission to change user type to $newUserType")
@@ -221,10 +221,10 @@ class AuthService : AuthRepository {
     }
 
     override suspend fun deactivateUser(currentUserId: String, targetUserId: String): Boolean = query {
-        val currentUser = UserDao.find { UserTable.id eq currentUserId }.singleOrNull()
+        val currentUser = UserDAO.find { UserTable.id eq currentUserId }.singleOrNull()
             ?: throw UserNotExistException()
 
-        val targetUser = UserDao.find { UserTable.id eq targetUserId }.singleOrNull()
+        val targetUser = UserDAO.find { UserTable.id eq targetUserId }.singleOrNull()
             ?: throw UserNotExistException()
 
         if (!RoleHierarchy.canManageUser(currentUser.userType, targetUser.userType)) {
@@ -236,10 +236,10 @@ class AuthService : AuthRepository {
     }
 
     override suspend fun activateUser(currentUserId: String, targetUserId: String): Boolean = query {
-        val currentUser = UserDao.find { UserTable.id eq currentUserId }.singleOrNull()
+        val currentUser = UserDAO.find { UserTable.id eq currentUserId }.singleOrNull()
             ?: throw UserNotExistException()
 
-        val targetUser = UserDao.find { UserTable.id eq targetUserId }.singleOrNull()
+        val targetUser = UserDAO.find { UserTable.id eq targetUserId }.singleOrNull()
             ?: throw UserNotExistException()
 
         if (!RoleHierarchy.canManageUser(currentUser.userType, targetUser.userType)) {

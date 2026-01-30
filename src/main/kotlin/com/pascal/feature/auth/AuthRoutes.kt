@@ -19,13 +19,13 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Route.authRoutes(authController: AuthService) {
+fun Route.authRoutes(controller: AuthService) {
     route("/auth") {
         post("login") {
             val requestBody = call.receive<LoginRequest>()
             call.respond(
                 ApiResponse.success(
-                    authController.login(requestBody), HttpStatusCode.OK
+                    controller.login(requestBody), HttpStatusCode.OK
                 )
             )
         }
@@ -33,7 +33,7 @@ fun Route.authRoutes(authController: AuthService) {
         post("register") {
             val requestBody = call.receive<RegisterRequest>()
             call.respond(
-                ApiResponse.success(authController.register(requestBody), HttpStatusCode.OK)
+                ApiResponse.success(controller.register(requestBody), HttpStatusCode.OK)
             )
         }
 
@@ -41,7 +41,7 @@ fun Route.authRoutes(authController: AuthService) {
             val (userId, otp) = call.requiredParameters("userId", "otp") ?: return@get
             call.respond(
                 ApiResponse.success(
-                    authController.otpVerification(userId, otp), HttpStatusCode.OK
+                    controller.otpVerification(userId, otp), HttpStatusCode.OK
                 )
             )
         }
@@ -53,7 +53,7 @@ fun Route.authRoutes(authController: AuthService) {
             put("change-password") {
                 val (oldPassword, newPassword) = call.requiredParameters("oldPassword", "newPassword") ?: return@put
                 val loginUser = call.principal<JwtTokenRequest>()
-                authController.changePassword(loginUser!!.userId, ChangePassword(oldPassword, newPassword)).let {
+                controller.changePassword(loginUser!!.userId, ChangePassword(oldPassword, newPassword)).let {
                     if (it) call.respond(
                         ApiResponse.success(
                             "Password has been changed", HttpStatusCode.OK
@@ -70,7 +70,7 @@ fun Route.authRoutes(authController: AuthService) {
         put("forget_password") {
             val (email, userType) = call.requiredParameters("email", "userType") ?: return@put
             val requestBody = ForgetPasswordRequest(email, userType)
-            authController.forgetPassword(requestBody).let { otp ->
+            controller.forgetPassword(requestBody).let { otp ->
                 sendEmail(requestBody.email, otp)
                 call.respond(
                     ApiResponse.success(
@@ -86,7 +86,7 @@ fun Route.authRoutes(authController: AuthService) {
                 "email", "otp", "newPassword", "userType"
             ) ?: return@get
 
-            authController.resetPassword(
+            controller.resetPassword(
                 ResetRequest(
                     email, otp, newPassword, userType
                 )
@@ -133,7 +133,7 @@ fun Route.authRoutes(authController: AuthService) {
                 }
 
                 try {
-                    val success = authController.changeUserType(
+                    val success = controller.changeUserType(
                         currentUser.userId,
                         userId,
                         newType
@@ -171,7 +171,7 @@ fun Route.authRoutes(authController: AuthService) {
                 }
 
                 try {
-                    val success = authController.deactivateUser(
+                    val success = controller.deactivateUser(
                         currentUser.userId,
                         userId
                     )
@@ -208,7 +208,7 @@ fun Route.authRoutes(authController: AuthService) {
                 }
 
                 try {
-                    val success = authController.activateUser(
+                    val success = controller.activateUser(
                         currentUser.userId,
                         userId
                     )

@@ -25,8 +25,8 @@ object UserTable : BaseIdTable("user") {
     }
 }
 
-class UserDao(id: EntityID<String>) : BaseEntity(id, UserTable) {
-    companion object : BaseEntityClass<UserDao>(UserTable, UserDao::class.java)
+class UserDAO(id: EntityID<String>) : BaseEntity(id, UserTable) {
+    companion object : BaseEntityClass<UserDAO>(UserTable, UserDAO::class.java)
 
     var email by UserTable.email
     var userType by UserTable.userType

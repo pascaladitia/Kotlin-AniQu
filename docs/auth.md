@@ -147,3 +147,245 @@ curl -X 'GET' \
   "data": true
 }
 ```
+
+### 4. Forget Password
+
+**`GET /auth/forget-password`**
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `email` | string | Yes | User's email address |
+| `userType` | string | No | Specify user type if multiple accounts exist with same email |
+
+#### Example Request
+
+```bash
+curl -X 'GET' \
+  'http://localhost:8080/auth/forget-password?email=piash@gmail.com&userType=customer' \
+  -H 'accept: application/json'
+```
+
+#### Example Response
+
+```json
+{
+  "isSuccess": true,
+  "statusCode": {
+    "value": 200,
+    "description": "OK"
+  },
+  "data": "verification code sent to piash@gmail.com"
+}
+```
+
+---
+
+### 5. Reset Password
+
+**`GET /auth/reset-password`**
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `email` | string | Yes | User's email address |
+| `otp` | string | Yes | Verification code from email |
+| `newPassword` | string | Yes | New password |
+| `userType` | string | No | Specify user type if multiple accounts exist |
+
+#### Example Request
+
+```bash
+curl -X 'GET' \
+  'http://localhost:8080/auth/reset-password?email=piash599%40gmail.com&otp=9889&newPassword=p1234&userType=customer' \
+  -H 'accept: application/json'
+```
+
+#### Example Response
+
+```json
+{
+  "isSuccess": true,
+  "statusCode": {
+    "value": 200,
+    "description": "OK"
+  },
+  "data": "Password change successful"
+}
+```
+
+---
+
+### 6. Change Password
+
+**`PUT /auth/change-password`**
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `oldPassword` | string | Yes | Current password |
+| `newPassword` | string | Yes | New password |
+
+#### Headers
+
+| Header | Value | Required |
+|--------|-------|----------|
+| `Authorization` | `Bearer <access_token>` | Yes |
+
+#### Example Request
+
+```bash
+curl -X 'PUT' \
+  'http://localhost:8080/auth/change-password?oldPassword=p1234&newPassword=newp1234' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...'
+```
+
+#### Example Response
+
+```json
+{
+  "isSuccess": true,
+  "statusCode": {
+    "value": 200,
+    "description": "OK"
+  },
+  "data": "Password has been changed"
+}
+```
+
+---
+
+### 7. Change User Type
+
+**`PUT /auth/{userId}/change-user-type`**
+
+Change an existing user's account type. This endpoint is available to administrators.
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `userId` | string | Yes | Unique identifier of the user to update |
+
+#### Query Parameters
+
+| Parameter | Type | Required | Description                                                       |
+|-----------|------|----------|-------------------------------------------------------------------|
+| `userType` | string | Yes | New user type to assign (`ADMIN`, `USER`) |
+
+#### Headers
+
+| Header | Value | Required |
+|--------|-------|----------|
+| `accept` | `application/json` | Yes |
+| `Authorization` | `Bearer <access_token>` | Yes (Admin/Super Admin) |
+
+#### Example Request
+
+```bash
+curl -X 'PUT' \
+  'http://localhost:8080/auth/a67fd0cc-3d92-4259-bbd4-1e0ba49dece4/change-user-type?userType=ADMIN' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...'
+```
+
+#### Example Response
+
+```json
+{
+  "isSuccess": true,
+  "statusCode": {
+    "value": 200,
+    "description": "OK"
+  },
+  "data": "User type changed successfully to ADMIN"
+}
+```
+
+---
+
+### 8. Deactivate User
+
+**`PUT /auth/{userId}/deactivate`**
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `userId` | string | Yes | Unique identifier of the user to deactivate |
+
+#### Headers
+
+| Header | Value | Required |
+|--------|-------|----------|
+| `accept` | `application/json` | Yes |
+| `Authorization` | `Bearer <access_token>` | Yes (Admin/Super Admin) |
+
+#### Example Request
+
+```bash
+curl -X 'PUT' \
+  'http://localhost:8080/auth/a67fd0cc-3d92-4259-bbd4-1e0ba49dece4/deactivate' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...'
+```
+
+#### Example Response
+
+```json
+{
+  "isSuccess": true,
+  "statusCode": {
+    "value": 200,
+    "description": "OK"
+  },
+  "data": "User deactivated successfully"
+}
+```
+
+---
+
+### 9. Activate User
+
+**`PUT /auth/{userId}/activate`**
+
+#### Path Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `userId` | string | Yes | Unique identifier of the user to activate |
+
+#### Headers
+
+| Header | Value | Required |
+|--------|-------|----------|
+| `accept` | `application/json` | Yes |
+| `Authorization` | `Bearer <access_token>` | Yes (Admin/Super Admin) |
+
+#### Example Request
+
+```bash
+curl -X 'PUT' \
+  'http://localhost:8080/auth/a67fd0cc-3d92-4259-bbd4-1e0ba49dece4/activate' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...'
+```
+
+#### Example Response
+
+```json
+{
+  "isSuccess": true,
+  "statusCode": {
+    "value": 200,
+    "description": "OK"
+  },
+  "data": "User activated successfully"
+}
+```
+
+---
